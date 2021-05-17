@@ -15,7 +15,7 @@ public class TestRegisterPage extends TestBase {
         RegisterPage registerPage = new RegisterPage(driver);
         try {
             registerPage.inputDataFromExcel();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

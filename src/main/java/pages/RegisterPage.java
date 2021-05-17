@@ -1,15 +1,17 @@
 package pages;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,62 +28,66 @@ public class RegisterPage {
     private WebDriver driver;
     Map<String, String>  mapData;
 
-    public void inputDataFromExcel() throws IOException {
+    public void inputDataFromExcel() throws Exception {
         mapData = getData(1);
-//        mapData.forEach((k,v) -> System.out.println(k + " = " + v));
-//        setUserType(mapData.get("userType"));
-//        setInputs();
-        String[] inputs = {
-                "usertype:S",
-                "first:T",
-                "last:T",
-                "email:T",
-                "email_verify:T",
-                "cpso:T",
-                "specialty:S",
-                "birthdate:T",
-                "gender:S",
-                "language:S",
-                "prov:S"
-        };
-        for (String input : inputs) {
-            String[] str = input.split(":");
-//            System.out.println(str[0] + " = " + str[1] + " - " + mapData.get(str[0]));
-            if ((str[1] == "S")) setSelect(str[0]);
-            else setInput(str[0]);
-        }
+
+        select("usertype");
+        input("first");
+        input("last");
+        input("email");
+        input("email_verify");
+        input("cpso");
+        select("specialty");
+        input("birthdate");
+        select("gender");
+        select("language");
+        select("prov");
+
     }
 
-    public void setSelect(String elem) {
-        Select drpSelect = new Select(driver.findElement(By.id(elem)));
-        drpSelect.selectByVisibleText(elem);
+    private void select(String idElem) throws Exception {
+        Select drpSelect = new Select(driver.findElement(By.id(idElem)));
+        drpSelect.selectByVisibleText(mapData.get(idElem));
+        saveScreenshot(idElem);
     }
 
-    public void setInput(String elem) {
-        WebElement inpElem = driver.findElement(By.id(elem));
-        inpElem.sendKeys(mapData.get(elem));
+    private void input(String idElem) throws Exception {
+        WebElement inpElem = driver.findElement(By.id(idElem));
+        inpElem.sendKeys(mapData.get(idElem));
+        saveScreenshot(idElem);
     }
 
-    public void setInputs() {
-        String[] inputs = {"first", "last", "email", "email_verify", "cpso"};
-        for (String input : inputs) {
-            WebElement elem = driver.findElement(By.id(input));
-            elem.sendKeys(mapData.get(input));
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+    private void saveScreenshot(String idElem) throws Exception {
+        driver.findElement(By.cssSelector("h3")).click();
+        WebElement label = driver.findElement(By.xpath("//*[@name='" + idElem+ "']/.."));
+
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
+        Thread.sleep(500);
+
+        FileUtils.copyFile(captureElementBitmap(driver, label), new File("src\\main\\resources\\" + idElem + ".png"));
     }
 
-    public void setUserType(String userType) {
-        Select drpUserType = new Select(driver.findElement(By.id("usertype")));
-        drpUserType.selectByVisibleText(userType);
+    private File captureElementBitmap(WebDriver driver, WebElement element) throws Exception {
+        // Делаем скриншот страницы
+        File screen = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        // Создаем экземпляр BufferedImage для работы с изображением
+        BufferedImage img = ImageIO.read(screen);
+        // Создаем прямоуголник (Rectangle) с размерами элемента
+        Rectangle rect = new Rectangle(0, 0, element.getSize().getHeight(), element.getSize().getWidth());
+        // Получаем координаты элемента
+        Point p = element.getLocation();
+        // Вырезаем изображенеи элемента из общего изображения
+        int dx = 10; int dy = 10;
+        BufferedImage dest = img.getSubimage(p.getX()-dx, p.getY(), rect.width+2*dx, rect.height + dy);
+        // Перезаписываем File screen
+        ImageIO.write(dest, "png", screen);
+        // Возвращаем File c изображением элемента
+        return screen;
     }
+
 
     private Map<String, String> getData(int nRow) throws IOException {
-        String excelFilePath = "src\\main\\resources\\2.2.data.xlsx";
+        String excelFilePath = "src\\main\\resources\\2.data.xlsx";
         FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
         Workbook workbook = new XSSFWorkbook(inputStream);
         Sheet firstSheet = workbook.getSheetAt(0);

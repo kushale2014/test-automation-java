@@ -3,7 +3,7 @@
 <suite name="All Test Suite">
     <test verbose="2" preserve-order="true" name="D:/CODE/Java/Automation/test">
         <classes>
-            <class name="tests.TestRegisterPage"></class>
+            <class name="ScreenshotDemo"></class>
         </classes>
 
     </test>
