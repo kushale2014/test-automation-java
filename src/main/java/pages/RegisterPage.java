@@ -1,14 +1,11 @@
 package pages;
 
-import io.netty.handler.codec.http.QueryStringDecoder;
-import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.openqa.selenium.*;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
 import javax.imageio.ImageIO;
@@ -18,9 +15,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import helper.Log;
 
-import static java.lang.Enum.valueOf;
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 public class RegisterPage {
@@ -34,21 +33,21 @@ public class RegisterPage {
     public void inputDataFromExcel() throws Exception {
         mapData = getData(1);
 
-//        select("usertype");
-//        input("first");
-//        input("last");
-//        input("email");
-//        input("email_verify");
-//        input("cpso");
-//        select("specialty");
+        select("usertype");
+        input("first");
+        input("last");
+        input("email");
+        input("email_verify");
+        input("cpso");
+        select("specialty");
         setDate("birthdate");
-//        select("gender");
-//        select("language");
-//        select("prov");
+        select("gender");
+        select("language");
+        select("prov");
 
     }
 
-    private void setDate(String idElem) throws InterruptedException, ParseException {
+    private void setDate(String idElem) throws ParseException {
         String birthday = mapData.get(idElem);
         if (birthday.isEmpty()) return;
         WebElement elem = driver.findElement(By.id(idElem));
@@ -64,6 +63,8 @@ public class RegisterPage {
         while (getCalendarPeriod() > inputPeriod ) {
             driver.findElement(By.cssSelector("a[title='Prev']")).click();
         }
+        WebElement dayElem = driver.findElement(By.xpath("//a[text()=" + day + "]"));
+        dayElem.click();
     }
 
     private int getCalendarPeriod() throws ParseException {
@@ -91,12 +92,28 @@ public class RegisterPage {
 
     private void saveScreenshot(String idElem) throws Exception {
         driver.findElement(By.cssSelector("h3")).click();
-        WebElement label = driver.findElement(By.xpath("//*[@name='" + idElem+ "']/.."));
+        Boolean notErrors = driver.findElements(By.xpath("//*[@id='" + idElem + "']/../span[@class='formerror']")).isEmpty();
+        if (notErrors) Log.i(idElem, "Pass");
+        else Log.e(idElem,"Fail");
 
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
-        Thread.sleep(500);
+        JavascriptExecutor j = (JavascriptExecutor) driver;
+        Long v = (Long) j.executeScript("return window.pageYOffset;");
+        System.out.println("Scroll position after launch: " + v);
+        // identify element
+        WebElement n = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
+        // Javascript executor to scroll to the element
+        ((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView(true);", n);
+        Thread.sleep(200);
+        // get current scroll position with Javascript Executor
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        Long d = (Long) (js.executeScript("return window.pageYOffset;"));
+        System.out.println("Scroll position after scrolling up to an element: "+d);
 
-        FileUtils.copyFile(captureElementBitmap(driver, label), new File("src\\main\\resources\\" + idElem + ".png"));
+//        WebElement label = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
+//        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
+//        Thread.sleep(500);
+//
+//        FileUtils.copyFile(captureElementBitmap(driver, label), new File("src\\main\\resources\\" + idElem + ".png"));
     }
 
     private File captureElementBitmap(WebDriver driver, WebElement element) throws Exception {
