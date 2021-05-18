@@ -1,5 +1,6 @@
 package pages;
 
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -15,9 +16,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static java.lang.Enum.valueOf;
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 public class RegisterPage {
@@ -31,18 +34,47 @@ public class RegisterPage {
     public void inputDataFromExcel() throws Exception {
         mapData = getData(1);
 
-        select("usertype");
-        input("first");
-        input("last");
-        input("email");
-        input("email_verify");
-        input("cpso");
-        select("specialty");
-        input("birthdate");
-        select("gender");
-        select("language");
-        select("prov");
+//        select("usertype");
+//        input("first");
+//        input("last");
+//        input("email");
+//        input("email_verify");
+//        input("cpso");
+//        select("specialty");
+        setDate("birthdate");
+//        select("gender");
+//        select("language");
+//        select("prov");
 
+    }
+
+    private void setDate(String idElem) throws InterruptedException, ParseException {
+        String birthday = mapData.get(idElem);
+        if (birthday.isEmpty()) return;
+        WebElement elem = driver.findElement(By.id(idElem));
+        elem.click();
+
+        String[] date = mapData.get(idElem).split("-");
+        int inputPeriod = Integer.parseInt(date[0] + date[1]);
+        int day = Integer.parseInt(date[2]);
+
+        while (getCalendarPeriod() < inputPeriod ) {
+            driver.findElement(By.cssSelector("a[title='Next']")).click();
+        }
+        while (getCalendarPeriod() > inputPeriod ) {
+            driver.findElement(By.cssSelector("a[title='Prev']")).click();
+        }
+    }
+
+    private int getCalendarPeriod() throws ParseException {
+        String calendarYear = driver.findElement(By.cssSelector("span.ui-datepicker-year")).getText();
+        String calendarMes = driver.findElement(By.cssSelector("span.ui-datepicker-month")).getText();
+
+        SimpleDateFormat formatStringMonth = new SimpleDateFormat("yyyy-MMMM", Locale.ENGLISH);
+        SimpleDateFormat formatIntMonth = new SimpleDateFormat("yyyyMM");
+        String calendarPeriod = formatIntMonth.format(formatStringMonth.parse(calendarYear + "-" + calendarMes));
+
+        return Integer.parseInt(calendarPeriod);
     }
 
     private void select(String idElem) throws Exception {
@@ -107,7 +139,7 @@ public class RegisterPage {
         mapData.put("cpso", row.getCell(5).getStringCellValue());
         mapData.put("specialty", row.getCell(6).getStringCellValue());
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         cell = row.getCell(7);
         String birthday = (cell.getCellType() == BLANK) ?  "" : dateFormat.format(cell.getDateCellValue());
         mapData.put("birthdate", birthday);

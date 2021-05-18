@@ -65,8 +65,6 @@ public class Screenshot {
         ImageIO.write(dest, "png", screen);
         // Возвращаем File c изображением элемента
         return screen;
-        WebElement el;
-        el()
     }
 
 }
