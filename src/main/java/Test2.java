@@ -1,6 +1,7 @@
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Test2 {
 
@@ -30,8 +31,8 @@ public class Test2 {
     }
 
     private void saveResult(String idElem) {
-        int nextIndex = list.indexOf(idElem)+1;
-        System.out.println(idElem+ ": " + nextIndex);
+        int x = (new Random()).nextInt(2);
+        System.out.println(x);
 
     }
 }

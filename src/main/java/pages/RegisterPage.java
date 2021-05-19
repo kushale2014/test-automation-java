@@ -16,10 +16,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+
 import helper.Log;
 
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
@@ -105,7 +103,16 @@ public class RegisterPage {
     private void input(String key) throws Exception {
         String idElem = key.split(":")[0];
         WebElement inpElem = driver.findElement(By.id(idElem));
-        inpElem.sendKeys(mapData.get(idElem));
+        String value = mapData.get(idElem);
+        int x = (new Random()).nextInt(2);
+        if (x==0) {
+            inpElem.sendKeys(value);
+            System.out.println(idElem+ ": sendKeys");
+        } else {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript("arguments[0].value='" + value + "';", inpElem);
+            System.out.println(idElem+ ": JavascriptExecutor");
+        }
         saveResult(key);
     }
 
