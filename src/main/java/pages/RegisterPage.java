@@ -1,5 +1,6 @@
 package pages;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -15,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -28,26 +30,40 @@ public class RegisterPage {
     }
 
     private WebDriver driver;
-    Map<String, String>  mapData;
+    private Map<String, String>  mapData;
+    private ArrayList<String> list = new ArrayList<String>();
 
     public void inputDataFromExcel() throws Exception {
         mapData = getData(1);
+        list.add("usertype:S");
+        list.add("first:T");
+        list.add("last:T");
+        list.add("email:T");
+        list.add("email_verify:T");
+        list.add("cpso:T");
+        list.add("specialty:S");
+        list.add("birthdate:D");
+        list.add("gender:S");
+        list.add("language:S");
+        list.add("prov:S");
 
-        select("usertype");
-        input("first");
-        input("last");
-        input("email");
-        input("email_verify");
-        input("cpso");
-        select("specialty");
-        setDate("birthdate");
-        select("gender");
-        select("language");
-        select("prov");
-
+        for (String key : list) {
+            switch(key.split(":")[1]) {
+                case "S":
+                    select(key);
+                    break;
+                case "T":
+                    input(key);
+                    break;
+                case "D":
+                    setDate(key);
+                    break;
+            }
+        }
     }
 
-    private void setDate(String idElem) throws ParseException {
+    private void setDate(String key) throws Exception {
+        String idElem = key.split(":")[0];
         String birthday = mapData.get(idElem);
         if (birthday.isEmpty()) return;
         WebElement elem = driver.findElement(By.id(idElem));
@@ -65,6 +81,7 @@ public class RegisterPage {
         }
         WebElement dayElem = driver.findElement(By.xpath("//a[text()=" + day + "]"));
         dayElem.click();
+        saveResult(key);
     }
 
     private int getCalendarPeriod() throws ParseException {
@@ -78,42 +95,46 @@ public class RegisterPage {
         return Integer.parseInt(calendarPeriod);
     }
 
-    private void select(String idElem) throws Exception {
+    private void select(String key) throws Exception {
+        String idElem = key.split(":")[0];
         Select drpSelect = new Select(driver.findElement(By.id(idElem)));
         drpSelect.selectByVisibleText(mapData.get(idElem));
-        saveScreenshot(idElem);
+        saveResult(key);
     }
 
-    private void input(String idElem) throws Exception {
+    private void input(String key) throws Exception {
+        String idElem = key.split(":")[0];
         WebElement inpElem = driver.findElement(By.id(idElem));
         inpElem.sendKeys(mapData.get(idElem));
-        saveScreenshot(idElem);
+        saveResult(key);
     }
 
-    private void saveScreenshot(String idElem) throws Exception {
-        driver.findElement(By.cssSelector("h3")).click();
-        Boolean notErrors = driver.findElements(By.xpath("//*[@id='" + idElem + "']/../span[@class='formerror']")).isEmpty();
-        if (notErrors) Log.i(idElem, "Pass");
-        else Log.e(idElem,"Fail");
+    private void saveResult(String key) throws Exception {
+        clickNextElem(key);
+        String idElem = key.split(":")[0];
 
-        JavascriptExecutor j = (JavascriptExecutor) driver;
-        Long v = (Long) j.executeScript("return window.pageYOffset;");
-        System.out.println("Scroll position after launch: " + v);
-        // identify element
-        WebElement n = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
-        // Javascript executor to scroll to the element
-        ((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView(true);", n);
+        WebElement label = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
         Thread.sleep(200);
-        // get current scroll position with Javascript Executor
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        Long d = (Long) (js.executeScript("return window.pageYOffset;"));
-        System.out.println("Scroll position after scrolling up to an element: "+d);
 
-//        WebElement label = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
-//        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
-//        Thread.sleep(500);
-//
-//        FileUtils.copyFile(captureElementBitmap(driver, label), new File("src\\main\\resources\\" + idElem + ".png"));
+        Boolean isErrors = ! driver.findElements(By.xpath("//*[@id='" + idElem + "']/../span[@class='formerror']")).isEmpty();
+        if (isErrors) Log.e(idElem,"Fail");
+        else Log.i(idElem, "Pass");
+
+        FileUtils.copyFile(captureElementBitmap(driver, label), new File("src\\main\\resources\\img\\" + (list.indexOf(key)+1) + "-" + idElem + ".png"));
+    }
+
+    private void clickNextElem(String key) {
+        String idElem = key.split(":")[0];
+        int nextIndex = list.indexOf(key)+1;
+        WebElement nextEl = null;
+        if (nextIndex < list.size()) {
+            String nextIdElem = list.get(nextIndex).split(":")[0];
+            nextEl = driver.findElement(By.xpath("//*[@id='" + nextIdElem+  "']/.."));
+        } else {
+            nextEl = driver.findElement(By.xpath("//*[@id='" + idElem +  "']/.."));
+        }
+        nextEl.click();
     }
 
     private File captureElementBitmap(WebDriver driver, WebElement element) throws Exception {
@@ -126,8 +147,10 @@ public class RegisterPage {
         // Получаем координаты элемента
         Point p = element.getLocation();
         // Вырезаем изображенеи элемента из общего изображения
-        int dx = 10; int dy = 10;
-        BufferedImage dest = img.getSubimage(p.getX()-dx, p.getY(), rect.width+2*dx, rect.height + dy);
+        int dx = 10;
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        int dy = ( (Long) (js.executeScript("return window.pageYOffset;"))).intValue();
+        BufferedImage dest = img.getSubimage(p.getX()-dx, p.getY()-dy, rect.width+2*dx, rect.height + 10);
         // Перезаписываем File screen
         ImageIO.write(dest, "png", screen);
         // Возвращаем File c изображением элемента
