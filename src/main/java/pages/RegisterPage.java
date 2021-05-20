@@ -31,8 +31,12 @@ public class RegisterPage {
     private Map<String, String>  mapData;
     private ArrayList<String> list = new ArrayList<String>();
 
+    private ArrayList<String> listFirstName = new ArrayList<String>();
+    private ArrayList<String> listLastName = new ArrayList<String>();
+    private ArrayList<String> listLicense = new ArrayList<String>();
+
     public void inputDataFromExcel() throws Exception {
-        mapData = getData(1);
+        mapData = getData_2();
         list.add("usertype:S");
         list.add("first:T");
         list.add("last:T");
@@ -40,23 +44,55 @@ public class RegisterPage {
         list.add("email_verify:T");
         list.add("cpso:T");
         list.add("specialty:S");
-        list.add("birthdate:D");
+        list.add("birthdate:T");
         list.add("gender:S");
         list.add("language:S");
         list.add("prov:S");
 
         for (String key : list) {
+            String value = mapData.get(key.split(":")[0]);
             switch(key.split(":")[1]) {
                 case "S":
-                    select(key);
+                    select(key, value);
                     break;
                 case "T":
-                    input(key);
+                    input(key, value);
                     break;
                 case "D":
                     setDate(key);
                     break;
             }
+        }
+    }
+
+    public void validateFields() throws Exception {
+        getData_3();
+
+        select("usertype:S", "Physician");
+        list.add("first:T");
+        list.add("last:T");
+        list.add("cpso:T");
+        for (String key : list) {
+            switch(key.split(":")[0]) {
+                case "first":
+                    for (String firstName : listFirstName) input(key, firstName);
+                    break;
+                case "last":
+                    for (String lastName : listLastName) input(key, lastName);
+                    break;
+                case "cpso":
+                    for (String license : listLicense) input(key, license);
+                    break;
+            }
+        }
+
+
+        for (String lastName : listLastName) {
+            System.out.println(lastName);
+        }
+
+        for (String license : listLicense) {
+            System.out.println(license);
         }
     }
 
@@ -93,17 +129,16 @@ public class RegisterPage {
         return Integer.parseInt(calendarPeriod);
     }
 
-    private void select(String key) throws Exception {
+    private void select(String key, String value) throws Exception {
         String idElem = key.split(":")[0];
         Select drpSelect = new Select(driver.findElement(By.id(idElem)));
-        drpSelect.selectByVisibleText(mapData.get(idElem));
+        drpSelect.selectByVisibleText(value);
         saveResult(key);
     }
 
-    private void input(String key) throws Exception {
+    private void input(String key, String value) throws Exception {
         String idElem = key.split(":")[0];
         WebElement inpElem = driver.findElement(By.id(idElem));
-        String value = mapData.get(idElem);
         int x = (new Random()).nextInt(2);
         if (x==0) {
             inpElem.sendKeys(value);
@@ -165,13 +200,13 @@ public class RegisterPage {
     }
 
 
-    private Map<String, String> getData(int nRow) throws IOException {
-        String excelFilePath = "src\\main\\resources\\2.data.xlsx";
+    private Map<String, String> getData_2() throws IOException {
+        String excelFilePath = "src\\main\\resources\\2.2.data.xlsx";
         FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
         Workbook workbook = new XSSFWorkbook(inputStream);
         Sheet firstSheet = workbook.getSheetAt(0);
 
-        Row row = firstSheet.getRow(nRow);
+        Row row = firstSheet.getRow(1);
         Cell cell;
 
         Map<String, String>  mapData = new HashMap<String, String>();
@@ -200,4 +235,25 @@ public class RegisterPage {
 
         return mapData;
     }
+
+
+    private void getData_3() throws IOException {
+        String excelFilePath = "src\\main\\resources\\2.3.data.xlsx";
+        FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+        Workbook workbook = new XSSFWorkbook(inputStream);
+        Sheet firstSheet = workbook.getSheetAt(0);
+
+        for (int i=1; ;i++) {
+            Row row = firstSheet.getRow(i);
+            if (row == null) break;
+            if (row.getCell(0) != null) listFirstName.add(row.getCell(1).getStringCellValue());
+            if (row.getCell(3) != null) listLastName.add(row.getCell(4).getStringCellValue());
+            if (row.getCell(6) != null) listLicense.add(row.getCell(7).getStringCellValue());
+        }
+
+        workbook.close();
+        inputStream.close();
+
+    }
+
 }

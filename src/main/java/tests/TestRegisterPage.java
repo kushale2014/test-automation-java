@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public class TestRegisterPage extends TestBase {
 
-    @Test
+//    @Test
     public void test1() {
         String url = "https://qatest-28flsd5.meshmd.com/register";
         super.start(url);
@@ -15,6 +15,21 @@ public class TestRegisterPage extends TestBase {
         RegisterPage registerPage = new RegisterPage(driver);
         try {
             registerPage.inputDataFromExcel();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        super.finish();
+    }
+
+    @Test
+    public void test2() {
+        String url = "https://qatest-28flsd5.meshmd.com/register";
+        super.start(url);
+
+        RegisterPage registerPage = new RegisterPage(driver);
+        try {
+            registerPage.validateFields();
         } catch (Exception e) {
             e.printStackTrace();
         }
