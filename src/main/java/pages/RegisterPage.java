@@ -25,85 +25,78 @@ import static org.apache.poi.ss.usermodel.CellType.BLANK;
 public class RegisterPage {
     public RegisterPage(WebDriver driver) {
         this.driver = driver;
+        iterator = 0;
+        listElem = Arrays.asList(
+                "usertype",
+                "first",
+                "last",
+                "email",
+                "email_verify",
+                "cpso",
+                "specialty",
+                "birthdate",
+                "gender",
+                "language",
+                "prov"
+        );
     }
 
     private WebDriver driver;
-    private Map<String, String>  mapData;
-    private ArrayList<String> list = new ArrayList<String>();
+    private Map<String, String>  mapData = new HashMap<String, String>();
 
     private ArrayList<String> listFirstName = new ArrayList<String>();
     private ArrayList<String> listLastName = new ArrayList<String>();
     private ArrayList<String> listLicense = new ArrayList<String>();
+    private List<String> listElem;
+    private String test;
+    private int iterator;
 
     public void inputDataFromExcel() throws Exception {
-        mapData = getData_2();
-        list.add("usertype:S");
-        list.add("first:T");
-        list.add("last:T");
-        list.add("email:T");
-        list.add("email_verify:T");
-        list.add("cpso:T");
-        list.add("specialty:S");
-        list.add("birthdate:T");
-        list.add("gender:S");
-        list.add("language:S");
-        list.add("prov:S");
-
-        for (String key : list) {
-            String value = mapData.get(key.split(":")[0]);
-            switch(key.split(":")[1]) {
-                case "S":
-                    select(key, value);
-                    break;
-                case "T":
-                    input(key, value);
-                    break;
-                case "D":
-                    setDate(key);
-                    break;
-            }
-        }
+        test = "Test2";
+        getData_2();
+        select("usertype");
+        input("first");
+        input("last");
+        input("email");
+        input("email_verify");
+        input("cpso");
+        select("specialty");
+        input("birthdate");
+        select("gender");
+        select("language");
+        select("prov");
     }
 
     public void validateFields() throws Exception {
+        test = "Test3";
+        mapData.put("usertype", "Physician");
+        select("usertype");
+
         getData_3();
-
-        select("usertype:S", "Physician");
-        list.add("first:T");
-        list.add("last:T");
-        list.add("cpso:T");
-        for (String key : list) {
-            switch(key.split(":")[0]) {
-                case "first":
-                    for (String firstName : listFirstName) input(key, firstName);
-                    break;
-                case "last":
-                    for (String lastName : listLastName) input(key, lastName);
-                    break;
-                case "cpso":
-                    for (String license : listLicense) input(key, license);
-                    break;
-            }
+        for (String firstName : listFirstName) {
+            mapData.put("first", firstName);
+            input("first");
         }
-
-
         for (String lastName : listLastName) {
-            System.out.println(lastName);
+            mapData.put("last", lastName);
+            input("last");
+        }
+        for (String license : listLicense) {
+            mapData.put("cpso", license);
+            input("cpso");
         }
 
-        for (String license : listLicense) {
-            System.out.println(license);
-        }
+        mapData.put("birthdate", "1976-04-11");
+        setDate("birthdate");
     }
 
-    private void setDate(String key) throws Exception {
-        String idElem = key.split(":")[0];
-        String birthday = mapData.get(idElem);
-        if (birthday.isEmpty()) return;
+    private void setDate(String idElem) throws Exception {
+        String value = mapData.get(idElem);
+        if (value.isEmpty()) return;
         WebElement elem = driver.findElement(By.id(idElem));
         elem.click();
 
-        String[] date = mapData.get(idElem).split("-");
+        String[] date = value.split("-");
         int inputPeriod = Integer.parseInt(date[0] + date[1]);
         int day = Integer.parseInt(date[2]);
 
@@ -115,7 +108,7 @@ public class RegisterPage {
         }
         WebElement dayElem = driver.findElement(By.xpath("//a[text()=" + day + "]"));
         dayElem.click();
-        saveResult(key);
+        saveResult(idElem);
     }
 
     private int getCalendarPeriod() throws ParseException {
@@ -129,16 +122,17 @@ public class RegisterPage {
         return Integer.parseInt(calendarPeriod);
     }
 
-    private void select(String key, String value) throws Exception {
-        String idElem = key.split(":")[0];
+    private void select(String idElem) throws Exception {
+        String value = mapData.get(idElem);
         Select drpSelect = new Select(driver.findElement(By.id(idElem)));
         drpSelect.selectByVisibleText(value);
-        saveResult(key);
+        saveResult(idElem);
     }
 
-    private void input(String key, String value) throws Exception {
-        String idElem = key.split(":")[0];
+    private void input(String idElem) throws Exception {
+        String value = mapData.get(idElem);
         WebElement inpElem = driver.findElement(By.id(idElem));
+        inpElem.clear();
         int x = (new Random()).nextInt(2);
         if (x==0) {
             inpElem.sendKeys(value);
@@ -148,12 +142,11 @@ public class RegisterPage {
             js.executeScript("arguments[0].value='" + value + "';", inpElem);
             System.out.println(idElem+ ": JavascriptExecutor");
         }
-        saveResult(key);
+        saveResult(idElem);
     }
 
-    private void saveResult(String key) throws Exception {
-        clickNextElem(key);
-        String idElem = key.split(":")[0];
+    private void saveResult(String idElem) throws Exception {
+        clickNextElem(idElem);
 
         WebElement label = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
@@ -163,18 +156,21 @@ public class RegisterPage {
         if (isErrors) Log.e(idElem,"Fail");
         else Log.i(idElem, "Pass");
 
-        FileUtils.copyFile(captureElementBitmap(driver, label), new File("src\\main\\resources\\img\\" + (list.indexOf(key)+1) + "-" + idElem + ".png"));
+        iterator++;
+        FileUtils.copyFile(
+                captureElementBitmap(driver, label),
+                new File("src\\main\\resources\\" + test + "\\" + iterator + "-" + idElem + ".png")
+        );
     }
 
-    private void clickNextElem(String key) {
-        String idElem = key.split(":")[0];
-        int nextIndex = list.indexOf(key)+1;
+    private void clickNextElem(String idElem) {
+        int nextIndex = listElem.indexOf(idElem)+1;
         WebElement nextEl = null;
-        if (nextIndex < list.size()) {
-            String nextIdElem = list.get(nextIndex).split(":")[0];
+        if (nextIndex < listElem.size()) {
+            String nextIdElem = (String) listElem.get(nextIndex);
             nextEl = driver.findElement(By.xpath("//*[@id='" + nextIdElem+  "']/.."));
         } else {
-            nextEl = driver.findElement(By.xpath("//*[@id='" + idElem +  "']/.."));
+            nextEl = driver.findElement(By.xpath("//div[@class='separator adjust-top']"));
         }
         nextEl.click();
     }
@@ -200,7 +196,7 @@ public class RegisterPage {
     }
 
 
-    private Map<String, String> getData_2() throws IOException {
+    private void getData_2() throws IOException {
         String excelFilePath = "src\\main\\resources\\2.2.data.xlsx";
         FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
         Workbook workbook = new XSSFWorkbook(inputStream);
@@ -209,7 +205,6 @@ public class RegisterPage {
         Row row = firstSheet.getRow(1);
         Cell cell;
 
-        Map<String, String>  mapData = new HashMap<String, String>();
         mapData.put("usertype", row.getCell(1).getStringCellValue());
         mapData.put("first", row.getCell(2).getStringCellValue());
         mapData.put("last", row.getCell(3).getStringCellValue());
@@ -233,7 +228,6 @@ public class RegisterPage {
         workbook.close();
         inputStream.close();
 
-        return mapData;
     }
 
 
@@ -253,7 +247,6 @@ public class RegisterPage {
 
         workbook.close();
         inputStream.close();
-
     }
 
 }
