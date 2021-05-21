@@ -20,6 +20,7 @@ import java.util.*;
 
 import helper.Log;
 
+import static helper.EmailValidation.validateEmailAddress;
 import static org.apache.poi.ss.usermodel.CellType.BLANK;
 
 public class RegisterPage {
@@ -47,6 +48,7 @@ public class RegisterPage {
     private ArrayList<String> listFirstName = new ArrayList<String>();
     private ArrayList<String> listLastName = new ArrayList<String>();
     private ArrayList<String> listLicense = new ArrayList<String>();
+    private ArrayList<String> listEmail = new ArrayList<String>();
     private List<String> listElem;
     private String test;
     private int iterator;
@@ -59,7 +61,7 @@ public class RegisterPage {
         input("last");
         input("email");
         input("email_verify");
-        input("cpso");
+        input_js("cpso");
         select("specialty");
         input("birthdate");
         select("gender");
@@ -84,6 +86,12 @@ public class RegisterPage {
         for (String license : listLicense) {
             mapData.put("cpso", license);
             input("cpso");
+        }
+
+        for (String email : listEmail) {
+            boolean isValid = validateEmailAddress(email);
+            if (isValid) Log.i(email, "Pass");
+            else Log.e(email, "Fail");
         }
 
         mapData.put("birthdate", "1976-04-11");
@@ -134,31 +142,33 @@ public class RegisterPage {
         WebElement inpElem = driver.findElement(By.id(idElem));
         inpElem.clear();
         int x = (new Random()).nextInt(2);
-        if (x==0) {
-            inpElem.sendKeys(value);
-            System.out.println(idElem+ ": sendKeys");
-        } else {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("arguments[0].value='" + value + "';", inpElem);
-            System.out.println(idElem+ ": JavascriptExecutor");
-        }
+        inpElem.sendKeys(value);
+        saveResult(idElem);
+    }
+
+    private void input_js(String idElem) throws Exception {
+        String value = mapData.get(idElem);
+        WebElement inpElem = driver.findElement(By.id(idElem));
+        inpElem.clear();
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].value='" + value + "';", inpElem);
         saveResult(idElem);
     }
 
     private void saveResult(String idElem) throws Exception {
         clickNextElem(idElem);
 
-        WebElement label = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", label);
+        WebElement labelElem = driver.findElement(By.xpath("//*[@id='" + idElem+ "']/.."));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", labelElem);
         Thread.sleep(200);
 
         Boolean isErrors = ! driver.findElements(By.xpath("//*[@id='" + idElem + "']/../span[@class='formerror']")).isEmpty();
-        if (isErrors) Log.e(idElem,"Fail");
-        else Log.i(idElem, "Pass");
+        if (isErrors) Log.e(idElem,"Errors");
+        else Log.i(idElem, "not Errors");
 
         iterator++;
         FileUtils.copyFile(
-                captureElementBitmap(driver, label),
+                captureElementBitmap(driver, labelElem),
                 new File("src\\main\\resources\\" + test + "\\" + iterator + "-" + idElem + ".png")
         );
     }
@@ -237,12 +247,14 @@ public class RegisterPage {
         Workbook workbook = new XSSFWorkbook(inputStream);
         Sheet firstSheet = workbook.getSheetAt(0);
 
-        for (int i=1; ;i++) {
-            Row row = firstSheet.getRow(i);
+        for (int j=1; ;j++) {
+            Row row = firstSheet.getRow(j);
             if (row == null) break;
-            if (row.getCell(0) != null) listFirstName.add(row.getCell(1).getStringCellValue());
-            if (row.getCell(3) != null) listLastName.add(row.getCell(4).getStringCellValue());
-            if (row.getCell(6) != null) listLicense.add(row.getCell(7).getStringCellValue());
+            int i;
+            i = 0; if (row.getCell(i) != null && row.getCell(i).getCellType() != BLANK) listFirstName.add(row.getCell(i+1).getStringCellValue());
+            i = 3; if (row.getCell(i) != null && row.getCell(i).getCellType() != BLANK) listLastName.add(row.getCell(i+1).getStringCellValue());
+            i = 6; if (row.getCell(i) != null && row.getCell(i).getCellType() != BLANK) listLicense.add(row.getCell(i+1).getStringCellValue());
+            i = 9; if (row.getCell(i) != null && row.getCell(i).getCellType() != BLANK) listEmail.add(row.getCell(i+1).getStringCellValue());
         }
 
         workbook.close();
@@ -250,3 +262,4 @@ public class RegisterPage {
     }
 
 }
+

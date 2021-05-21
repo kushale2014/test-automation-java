@@ -5,9 +5,10 @@ import pages.LoginPage;
 
 public class TestLoginPage extends TestBase {
 
+    private String url = "https://qatest-28flsd5.meshmd.com/SignIn?r=%2F";
+
     @Test
     public void test1() {
-        String url = "https://qatest-28flsd5.meshmd.com/SignIn?r=%2F";
         super.start(url);
 
         LoginPage loginPage = new LoginPage(driver);
